@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Request Logs</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f4f4f4;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+        padding-top: 60px;
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+      }
+
+      .close-button {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        position: absolute;
+        top: 10px;
+        right: 25px;
+        font-size: 40px;
+        cursor: pointer;
+      }
+
+      .close-button:hover,
+      .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Request Logs</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ASSIGNED AGENT</th>
+          <th>MSG</th>
+          <th>NUMBER</th>
+          <th>Timestamp</th>
+          <th>Assign Agent</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% logs.forEach(log => { %>
+        <tr>
+          <td><%= log.logId %></td>
+          <td><%= log.agentName %></td>
+          <td><%= log.message %></td>
+          <td><%= log.sender %></td>
+          <td><%= log.timestamp %></td>
+          <td>
+            <button class="assign-button" data-id="<%= log.logId %>">
+              ASSIGN TO
+            </button>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <!-- Modal -->
+    <div id="assignModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Assign Agent</h2>
+        <form id="assignForm">
+          <label for="agent">Select Agent:</label>
+          <select id="agent" name="agent">
+            <!-- Display only available agents -->
+            <% agents.forEach(agent => { %> <% if (agent.availability ===
+            "Available") { %>
+            <option value="<%= agent.name %>">
+              <%= agent.name %> - <%= agent.phoneNumber %>
+            </option>
+            <% } %> <% }) %>
+          </select>
+          <input type="hidden" id="logId" name="logId" />
+          <button type="submit">Assign</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const modal = document.getElementById("assignModal");
+      const closeButton = document.querySelector(".close-button");
+      const assignButtons = document.querySelectorAll(".assign-button");
+      const assignForm = document.getElementById("assignForm");
+      const logIdInput = document.getElementById("logId");
+
+      assignButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const logId = button.getAttribute("data-id");
+          logIdInput.value = logId;
+          modal.style.display = "block";
+        });
+      });
+
+      closeButton.addEventListener("click", () => {
+        modal.style.display = "none";
+      });
+
+      window.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      });
+
+      assignForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const agentName = document.getElementById("agent").value; // Send agentName
+        const logId = document.getElementById("logId").value;
+
+        fetch(`/assign-agent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentName, logId }), // Send agentName instead of agentId
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+            modal.style.display = "none";
+          })
+          .catch((err) => console.error("Error:", err));
+      });
+    </script>
+  </body>
+</html>
