@@ -2,20 +2,14 @@ const express = require("express");
 const mysql = require("mysql");
 const bodyParser = require("body-parser");
 const path = require("path");
-
 const app = express();
 const PORT = 5000;
-
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
-
-// Set view engine to EJS
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-
-// MySQL Database Connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -23,7 +17,7 @@ const db = mysql.createConnection({
   database: "express_log",
 });
 
-// Connect to MySQL
+// Connect
 db.connect((err) => {
   if (err) {
     console.error("Error connecting to MySQL:", err.message);
@@ -32,7 +26,7 @@ db.connect((err) => {
   console.log("Connected to MySQL");
 });
 
-// Route to get all available agents
+// Route
 app.get("/agents", (req, res) => {
   const query = "SELECT * FROM agents WHERE availability = 'Available'";
   db.query(query, (err, results) => {
@@ -44,7 +38,7 @@ app.get("/agents", (req, res) => {
   });
 });
 
-// Route to get all request logs
+// Route
 app.get("/", (req, res) => {
   const query = "SELECT * FROM request_logs ORDER BY timestamp DESC";
   db.query(query, (err, results) => {
@@ -63,7 +57,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// Route to check agent assignment
+// Route
 app.get("/check-agent-assignment", (req, res) => {
   const { agentName } = req.query;
 
@@ -71,7 +65,7 @@ app.get("/check-agent-assignment", (req, res) => {
     return res.status(400).send("Agent name is required.");
   }
 
-  // Query to check if the agent exists and is assigned
+  // Query
   const agentQuery =
     "SELECT * FROM agents WHERE name = ? AND availability = 'Assigned'";
   db.query(agentQuery, [agentName], (err, agentResults) => {
@@ -81,10 +75,10 @@ app.get("/check-agent-assignment", (req, res) => {
     }
 
     if (agentResults.length === 0) {
-      return res.send("null"); // Agent not assigned
+      return res.send("null"); // not assigned
     }
 
-    // Query to fetch the assigned phone number from request_logs
+    // Query
     const logQuery = "SELECT sender FROM request_logs WHERE agentName = ?";
     db.query(logQuery, [agentName], (err, logResults) => {
       if (err) {
@@ -93,17 +87,17 @@ app.get("/check-agent-assignment", (req, res) => {
       }
 
       if (logResults.length === 0) {
-        return res.send("null"); // No request assigned
+        return res.send("null"); // No request
       }
 
-      // Return the phone number from the sender column
+      // Return
       const phoneNumber = logResults[0].sender;
       res.send(phoneNumber);
     });
   });
 });
 
-// Route to check if a message is already logged
+// Route
 app.get("/checkMessage", (req, res) => {
   const { sender, message } = req.query;
 
@@ -121,7 +115,7 @@ app.get("/checkMessage", (req, res) => {
   });
 });
 
-// Route to log a new message
+// Route
 app.post("/log", (req, res) => {
   const { sender, message } = req.body;
 
@@ -153,12 +147,11 @@ app.post("/log", (req, res) => {
   });
 });
 
-// Route to assign an agent to a log
-// Route to assign an agent to a log
+// Route
 app.post("/assign-agent", (req, res) => {
-  console.log("Received request:", req.body); // Log the received data
+  console.log("Received request:", req.body);
 
-  const { agentName, logId } = req.body; // Expecting agentName from frontend
+  const { agentName, logId } = req.body;
 
   if (!agentName || !logId) {
     console.log("Missing agentName or logId");
@@ -178,8 +171,7 @@ app.post("/assign-agent", (req, res) => {
       return res.status(400).json({ message: "Agent not available." });
     }
 
-    // Query to fetch the log using the logId, not agentName
-    const fetchLogQuery = "SELECT sender FROM request_logs WHERE logId = ?"; // Changed agentName to id
+    const fetchLogQuery = "SELECT sender FROM request_logs WHERE logId = ?";
     db.query(fetchLogQuery, [logId], (err, logResults) => {
       if (err) {
         console.error("Error fetching log details:", err.message);
@@ -194,7 +186,7 @@ app.post("/assign-agent", (req, res) => {
       const phoneNumber = logResults[0].sender;
 
       const assignAgentQuery =
-        "UPDATE request_logs SET agentName = ? WHERE logId = ?"; // Corrected condition
+        "UPDATE request_logs SET agentName = ? WHERE logId = ?";
       db.query(assignAgentQuery, [agentName, logId], (err) => {
         if (err) {
           console.error("Error assigning agent:", err.message);
@@ -219,7 +211,7 @@ app.post("/assign-agent", (req, res) => {
   });
 });
 
-// Route to update agent availability after the call ends
+// Route
 app.get("/update-agent-availability", (req, res) => {
   const { agentName, availability } = req.query;
 
@@ -242,7 +234,7 @@ app.get("/update-agent-availability", (req, res) => {
   });
 });
 
-// Start the server
+// Start
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
